@@ -38,10 +38,9 @@ def getStockPrice(code):
 
     return df
 
-stock = getCodeList()
-data = getStockPrice(stock[0])
-
-data.to_csv('kospi_price_list_naver')
+codeList = getCodeList()
+data = getStockPrice(codeList[1])
+data.to_csv('db/kospi_price_{}'.format(codeList[1]))
 print("done")
 
 

@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup as bs
 
 
 def getCodeList():
-    df = pd.read_csv('kospi_list') #코스피 목록 불러오기
+    df = pd.read_csv('dataset\kospi_list') #코스피 목록 불러오기
     lists = df['종목코드'].values.tolist() #코스피 종목코드 리스트
     return lists
 
@@ -20,10 +20,12 @@ def getStockPrice(code):
     lastPage = int(pgRR.a["href"].split("=")[-1]) #마지막페이지 값 추출
 
     df = pd.DataFrame()
+    print(type(df))
     for p in range (1, lastPage+1):
         pageUrl = '{}&page={}'.format(url, p) #이렇게 하는 이유는 p가 int인데, pageUrl은 str이라서
         pageReq = requests.get(url=pageUrl, headers= headers)
-        df = df.append(pd.read_html(pageReq.text)[0])
+        dfFromPage = pd.read_html(pageReq.text)[0]
+        df = df.append(dfFromPage)
     
     df = df.rename(columns={'날짜':'date','종가':'close','전일비':'diff'
                 ,'시가':'open','고가':'high','저가':'low','거래량':'volume'}) #영문으로 컬럼명 변경
@@ -38,34 +40,55 @@ def getStockPrice(code):
 
     return df
 
-codeList = getCodeList()
-data = getStockPrice(codeList[1])
-data.to_csv('db/kospi_price_{}'.format(codeList[1]))
+codeList = getCodeList() #주식시장 코드 불러오기
+
+# 작업파일 불러오기
+dfOpen = pd.read_csv('kospi_openPrice')
+dfClose = pd.read_csv('kospi_closePrice') 
+dfLow = pd.read_csv('kospi_lowestPrice')
+dfHigh = pd.read_csv('kospi_highestPrice') 
+dfVolume = pd.read_csv('kospi_volume')
+
+# #맨터음 파일 생성
+# rawDf = getStockPrice(codeList[0])
+# dfOpen = pd.DataFrame({'date': rawDf['date']})
+# dfClose = pd.DataFrame({'date': rawDf['date']})
+# dfLow = pd.DataFrame({'date': rawDf['date']})
+# dfHigh = pd.DataFrame({'date': rawDf['date']})
+# dfVolume = pd.DataFrame({'date': rawDf['date']})
+
+
+# 이전 작업때 얼마나 작업을 햇었는지 확인
+currentCodeIndex = min(len(dfOpen.columns), 
+                       len(dfClose.columns),
+                       len(dfLow.columns),
+                       len(dfHigh.columns),
+                       len(dfVolume.columns))-1
+lastCodeIndex = len(codeList)-1
+
+
+#이전에 끝났던 부분부터 다시 작업 시작
+for index in range(currentCodeIndex, 5):
+    rawDf = getStockPrice(codeList[index]) #크롤링으로 해당 종목에 대한 가격 데이터 df
+    
+    # serise + dataframe
+    dfOpen[codeList[index]] = rawDf['open']
+    dfClose[codeList[index]] = rawDf['close']
+    dfLow[codeList[index]] = rawDf['low']
+    dfHigh[codeList[index]] = rawDf['high']
+    dfVolume[codeList[index]] = rawDf['volume']
+    
+    #serise --> dataframe + dateframe
+    # dfOpenC = pd.concat(dfOpen, rawDf['open'].to_frame())
+    # dfCloseC = pd.concat(dfClose, rawDf['close'].to_frame())
+    # dfLowC = pd.concat(dfLow, rawDf['low'].to_frame())
+    # dfHighC = pd.concat(dfHigh, rawDf['high'].to_frame())
+    # dfVolumeC = pd.concat(dfVolume, rawDf['volume'].to_frame())
+
+dfOpen.to_csv('kospi_openPrice')
+dfClose.to_csv('kospi_closePrice')
+dfLow.to_csv('kospi_lowestPrice')
+dfHigh.to_csv('kospi_highestPrice')
+dfVolume.to_csv('kospi_volume')
+
 print("done")
-
-
-
-# for i in stockList:
-
-    #페이지 최대값 구하기
-    # maxPage = 655
-    # maxPage = source.find_all("table", class_="Nnavi") 
-    # mp = maxPage[0].find_all("td", class_="pgRR")
-    # mpNum = int(mp[0].a.get('href')[-3:])
-
-    # 각 페이지에서의 작업
-    # for currentPage in range(1, maxPage+1):
-    #     urlAtPage = 'http://finance.naver.com/item/sise_day.nhn?code=' + i + '&page=' + str(currentPage)
-    #     htmlAtPage = urlopen(urlAtPage)
-    #     sourceAtPage = BeautifulSoup(htmlAtPage.read(), 'html.parser')
-    #     sourceList = sourceAtPage.find_all('tr')
-    #     isNone = None
-
-    #     if((currentPage % 1) == 0):
-    #         time.sleep(2)
-        
-    #     for i in range(1, len(sourceList)-1):
-    #         if(sourceList[i].span != isNone):
-    #             sourceList[i].td.text
-    #             print(sourceList[i].find_all('td', align='center')[0].text, sourceList[i].find_all('td', class_='num')[0].text)
-

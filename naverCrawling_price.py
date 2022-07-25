@@ -20,12 +20,11 @@ def getStockPrice(code):
     lastPage = int(pgRR.a["href"].split("=")[-1]) #마지막페이지 값 추출
 
     df = pd.DataFrame()
-    print(type(df))
     for p in range (1, lastPage+1):
         pageUrl = '{}&page={}'.format(url, p) #이렇게 하는 이유는 p가 int인데, pageUrl은 str이라서
         pageReq = requests.get(url=pageUrl, headers= headers)
         dfFromPage = pd.read_html(pageReq.text)[0]
-        df = df.append(dfFromPage)
+        df = pd.concat([df, dfFromPage])
     
     df = df.rename(columns={'날짜':'date','종가':'close','전일비':'diff'
                 ,'시가':'open','고가':'high','저가':'low','거래량':'volume'}) #영문으로 컬럼명 변경
@@ -34,56 +33,72 @@ def getStockPrice(code):
     df[['close', 'diff', 'open', 'high', 'low', 'volume']] = \
                             df[['close','diff', 'open', 'high', 'low', 'volume']].astype(int) # int형으로 변경
     df = df[['date', 'open', 'high', 'low', 'close', 'diff', 'volume']] # 컬럼 순서 정렬
-    df = df.sort_values(by = 'date') # 날짜순으로 정렬
-
-    df.sort_values(by='date')
+    # df = df.sort_values(by = 'date') # 날짜순으로 정렬
 
     return df
 
 codeList = getCodeList() #주식시장 코드 불러오기
 
 # 작업파일 불러오기
-dfOpen = pd.read_csv('kospi_openPrice')
-dfClose = pd.read_csv('kospi_closePrice') 
-dfLow = pd.read_csv('kospi_lowestPrice')
-dfHigh = pd.read_csv('kospi_highestPrice') 
-dfVolume = pd.read_csv('kospi_volume')
+# dfOpen = pd.read_csv('kospi_openPrice')
+# dfClose = pd.read_csv('kospi_closePrice') 
+# dfLow = pd.read_csv('kospi_lowestPrice')
+# dfHigh = pd.read_csv('kospi_highestPrice') 
+# dfVolume = pd.read_csv('kospi_volume')
 
 # #맨터음 파일 생성
-# rawDf = getStockPrice(codeList[0])
-# dfOpen = pd.DataFrame({'date': rawDf['date']})
-# dfClose = pd.DataFrame({'date': rawDf['date']})
-# dfLow = pd.DataFrame({'date': rawDf['date']})
-# dfHigh = pd.DataFrame({'date': rawDf['date']})
-# dfVolume = pd.DataFrame({'date': rawDf['date']})
+rawDf = getStockPrice(codeList[0])
+dfOpen = pd.DataFrame({'date': rawDf['date']})
+dfClose = pd.DataFrame({'date': rawDf['date']})
+dfLow = pd.DataFrame({'date': rawDf['date']})
+dfHigh = pd.DataFrame({'date': rawDf['date']})
+dfVolume = pd.DataFrame({'date': rawDf['date']})
 
 
 # 이전 작업때 얼마나 작업을 햇었는지 확인
-currentCodeIndex = min(len(dfOpen.columns), 
-                       len(dfClose.columns),
-                       len(dfLow.columns),
-                       len(dfHigh.columns),
-                       len(dfVolume.columns))-1
-lastCodeIndex = len(codeList)-1
+# currentCodeIndex = min(len(dfOpen.columns), 
+#                        len(dfClose.columns),
+#                        len(dfLow.columns),
+#                        len(dfHigh.columns),
+#                        len(dfVolume.columns))-1
+# lastCodeIndex = len(codeList)-1
 
 
+x = 0
 #이전에 끝났던 부분부터 다시 작업 시작
-for index in range(currentCodeIndex, 5):
-    rawDf = getStockPrice(codeList[index]) #크롤링으로 해당 종목에 대한 가격 데이터 df
+for index in codeList:
+    print("current trial is:{}, {}/{}".format(index, x, len(codeList)) )
+    rawDf = getStockPrice(index) #크롤링으로 해당 종목에 대한 가격 데이터 df
     
     # serise + dataframe
-    dfOpen[codeList[index]] = rawDf['open']
-    dfClose[codeList[index]] = rawDf['close']
-    dfLow[codeList[index]] = rawDf['low']
-    dfHigh[codeList[index]] = rawDf['high']
-    dfVolume[codeList[index]] = rawDf['volume']
+    # dfOpen[codeList[index]] = rawDf['open']
+    # dfClose[codeList[index]] = rawDf['close']
+    # dfLow[codeList[index]] = rawDf['low']
+    # dfHigh[codeList[index]] = rawDf['high']
+    # dfVolume[codeList[index]] = rawDf['volume']
     
     #serise --> dataframe + dateframe
-    # dfOpenC = pd.concat(dfOpen, rawDf['open'].to_frame())
-    # dfCloseC = pd.concat(dfClose, rawDf['close'].to_frame())
-    # dfLowC = pd.concat(dfLow, rawDf['low'].to_frame())
-    # dfHighC = pd.concat(dfHigh, rawDf['high'].to_frame())
-    # dfVolumeC = pd.concat(dfVolume, rawDf['volume'].to_frame())
+    dfo = pd.DataFrame({'date' : rawDf['date'], "{}".format(index) : rawDf['open']})
+    dfOpen = pd.merge(dfOpen, dfo, on='date')
+
+    dfc = pd.DataFrame({'date' : rawDf['date'],"{}".format(index) : rawDf['close']})
+    dfClose = pd.merge(dfClose, dfc, on='date') 
+
+    dfl = pd.DataFrame({'date' : rawDf['date'],"{}".format(index) : rawDf['low']})
+    dfLow = pd.merge(dfLow, dfl, on='date') 
+
+    dfh = pd.DataFrame({'date' : rawDf['date'],"{}".format(index) : rawDf['high']})
+    dfHigh = pd.merge(dfHigh, dfh, on='date') 
+
+    dfv = pd.DataFrame({'date' : rawDf['date'],"{}".format(index) : rawDf['volume']})
+    dfVolume = pd.merge(dfHigh, dfv, on='date') 
+
+    dfOpen.to_csv('kospi_openPrice')
+    dfClose.to_csv('kospi_closePrice')
+    dfLow.to_csv('kospi_lowestPrice')
+    dfHigh.to_csv('kospi_highestPrice')
+    dfVolume.to_csv('kospi_volume')
+    x = x + 1
 
 dfOpen.to_csv('kospi_openPrice')
 dfClose.to_csv('kospi_closePrice')

@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup as bs
 
 
 def getCodeList():
-    df = pd.read_csv('dataset\kospi_list') #코스피 목록 불러오기
+    df = pd.read_csv('db\kospi_list') #코스피 목록 불러오기
     lists = df['종목코드'].values.tolist() #코스피 종목코드 리스트
     return lists
 
@@ -99,11 +99,5 @@ for index in codeList:
     dfHigh.to_csv('kospi_highestPrice')
     dfVolume.to_csv('kospi_volume')
     x = x + 1
-
-dfOpen.to_csv('kospi_openPrice')
-dfClose.to_csv('kospi_closePrice')
-dfLow.to_csv('kospi_lowestPrice')
-dfHigh.to_csv('kospi_highestPrice')
-dfVolume.to_csv('kospi_volume')
 
 print("done")

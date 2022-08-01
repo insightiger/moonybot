@@ -56,7 +56,7 @@ dfHigh['date'] = pd.to_datetime(dfHigh['date'])
 dfVolume = pd.read_csv('NaverCrawling\kospi_volume')
 dfVolume['date'] = pd.to_datetime(dfVolume['date'])
 
-
+exit()
 
 # #맨처음 파일 생성
 # rawDf = getStockPrice(codeList[0])
